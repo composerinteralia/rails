@@ -166,9 +166,16 @@ class HasManyAssociationsTest < ActiveRecord::TestCase
     assert_equal 0, counter
     post = posts.first
     assert_equal 0, counter
-    sql = capture_sql { post.comments.to_a }
+
+    binds = capture_binds { post.comments.to_a }
+    id = binds[0].find { |x| :inc == (x.name) }
+
     post.comments.reset
-    assert_not_equal sql, capture_sql { post.comments.to_a }
+
+    reloaded_binds = capture_binds { post.comments.to_a }
+    reloaded_id = reloaded_binds[0].find { |x| :inc == (x.name) }
+
+    assert_not_equal id, reloaded_id
   end
 
   def test_has_many_build_with_options

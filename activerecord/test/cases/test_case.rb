@@ -33,7 +33,13 @@ module ActiveRecord
     def capture_sql
       SQLCounter.clear_log
       yield
-      SQLCounter.log_all.dup
+      SQLCounter.log_all(:sql).dup
+    end
+
+    def capture_binds
+      SQLCounter.clear_log
+      yield
+      SQLCounter.log_all(:binds).dup
     end
 
     def assert_sql(*patterns_to_match)
@@ -41,16 +47,16 @@ module ActiveRecord
     ensure
       failed_patterns = []
       patterns_to_match.each do |pattern|
-        failed_patterns << pattern unless SQLCounter.log_all.any? { |sql| pattern === sql }
+        failed_patterns << pattern unless SQLCounter.log_all(:sql).any? { |sql| pattern === sql }
       end
-      assert failed_patterns.empty?, "Query pattern(s) #{failed_patterns.map(&:inspect).join(', ')} not found.#{SQLCounter.log.size == 0 ? '' : "\nQueries:\n#{SQLCounter.log.join("\n")}"}"
+      assert failed_patterns.empty?, "Query pattern(s) #{failed_patterns.map(&:inspect).join(', ')} not found.#{SQLCounter.log(:sql).size == 0 ? '' : "\nQueries:\n#{SQLCounter.log(:sql).join("\n")}"}"
     end
 
     def assert_queries(num = 1, options = {})
       ignore_none = options.fetch(:ignore_none) { num == :any }
       SQLCounter.clear_log
       x = yield
-      the_log = ignore_none ? SQLCounter.log_all : SQLCounter.log
+      the_log = ignore_none ? SQLCounter.log_all(:sql) : SQLCounter.log(:sql)
       if num == :any
         assert_operator the_log.size, :>=, 1, "1 or more queries expected, but none were executed."
       else
@@ -103,8 +109,25 @@ module ActiveRecord
 
   class SQLCounter
     class << self
-      attr_accessor :ignored_sql, :log, :log_all
-      def clear_log; self.log = []; self.log_all = []; end
+      attr_accessor :ignored_sql
+
+      def clear_log
+        @log_all = []
+        @log = []
+      end
+
+      def log_all(type)
+        @log_all.map { |log| log[type] }
+      end
+
+      def log(type)
+        @log.map { |log| log[type] }
+      end
+
+      def record_log(values, ignore: true)
+        @log_all << values
+        @log << values unless ignore
+      end
     end
 
     clear_log
@@ -131,10 +154,7 @@ module ActiveRecord
 
     def call(name, start, finish, message_id, values)
       return if values[:cached]
-
-      sql = values[:sql]
-      self.class.log_all << sql
-      self.class.log << sql unless ignore.match?(sql)
+      self.class.record_log(values, ignore: ignore.match?(values[:sql]))
     end
   end
 

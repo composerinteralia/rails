@@ -178,16 +178,10 @@ module ActiveRecord
     end
 
     test "merging a hash interpolates conditions" do
-      klass = Class.new(FakeKlass) do
-        def self.sanitize_sql(args)
-          raise unless args == ["foo = ?", "bar"]
-          "foo = bar"
-        end
-      end
-
-      relation = Relation.new(klass)
-      relation.merge!(where: ["foo = ?", "bar"])
-      assert_equal Relation::WhereClause.new(["foo = bar"]), relation.where_clause
+      arel = Arel::Nodes::LiteralSequence.new([Arel.sql("foo = bar")])
+      relation = Relation.new(FakeKlass)
+      relation.merge!(where: arel)
+      assert_equal Relation::WhereClause.new([arel]), relation.where_clause
     end
 
     def test_merging_readonly_false

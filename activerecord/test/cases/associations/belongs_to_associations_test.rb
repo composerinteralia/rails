@@ -45,7 +45,7 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
     ActiveRecord::SQLCounter.clear_log
     Client.find(3).firm
   ensure
-    assert ActiveRecord::SQLCounter.log_all.all? { |sql| /order by/i !~ sql }, "ORDER BY was used in the query"
+    assert ActiveRecord::SQLCounter.log_all(:sql).all? { |sql| /order by/i !~ sql }, "ORDER BY was used in the query"
   end
 
   def test_belongs_to_with_primary_key
@@ -159,30 +159,37 @@ class BelongsToAssociationsTest < ActiveRecord::TestCase
   def test_default_scope_on_relations_is_not_cached
     counter = 0
 
-    comments = Class.new(ActiveRecord::Base) {
+    comments = Class.new(ActiveRecord::Base) do
       self.table_name = "comments"
       self.inheritance_column = "not_there"
 
-      posts = Class.new(ActiveRecord::Base) {
+      posts = Class.new(ActiveRecord::Base) do
         self.table_name = "posts"
         self.inheritance_column = "not_there"
 
-        default_scope -> {
+        default_scope -> do
           counter += 1
           where("id = :inc", inc: counter)
-        }
+        end
 
         has_many :comments, anonymous_class: comments
-      }
+      end
       belongs_to :post, anonymous_class: posts, inverse_of: false
-    }
+    end
 
     assert_equal 0, counter
     comment = comments.first
     assert_equal 0, counter
-    sql = capture_sql { comment.post }
+
+    binds = capture_binds { comment.post }
+    id = binds[0].find { |x| :inc == (x.name) }
+
     comment.reload
-    assert_not_equal sql, capture_sql { comment.post }
+
+    reloaded_binds = capture_binds { comment.post }
+    reloaded_id = reloaded_binds[0].find { |x| :inc == (x.name) }
+
+    assert_not_equal id, reloaded_id
   end
 
   def test_proxy_assignment

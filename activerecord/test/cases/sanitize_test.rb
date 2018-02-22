@@ -7,9 +7,6 @@ require "models/post"
 require "models/customer"
 
 class SanitizeTest < ActiveRecord::TestCase
-  def setup
-  end
-
   def test_sanitize_sql_array_handles_string_interpolation
     quoted_bambi = ActiveRecord::Base.connection.quote_string("Bambi")
     assert_equal "name='#{quoted_bambi}'", Binary.sanitize_sql_array(["name='%s'", "Bambi"])
@@ -69,26 +66,6 @@ class SanitizeTest < ActiveRecord::TestCase
     assert_equal "great!!", Binary.sanitize_sql_like("great!", "!")
     assert_equal 'C:\\Programs\\MsPaint', Binary.sanitize_sql_like('C:\\Programs\\MsPaint', "!")
     assert_equal "normal string 42", Binary.sanitize_sql_like("normal string 42", "!")
-  end
-
-  def test_sanitize_sql_like_example_use_case
-    searchable_post = Class.new(Post) do
-      def self.search_as_method(term)
-        where("title LIKE ?", sanitize_sql_like(term, "!"))
-      end
-
-      scope :search_as_scope, -> (term) {
-        where("title LIKE ?", sanitize_sql_like(term, "!"))
-      }
-    end
-
-    assert_sql(/LIKE '20!% !_reduction!_!!'/) do
-      searchable_post.search_as_method("20% _reduction_!").to_a
-    end
-
-    assert_sql(/LIKE '20!% !_reduction!_!!'/) do
-      searchable_post.search_as_scope("20% _reduction_!").to_a
-    end
   end
 
   def test_bind_arity
