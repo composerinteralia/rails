@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "active_record/relation/sql_literal"
+
 module ActiveRecord
   module Sanitization
     extend ActiveSupport::Concern
@@ -121,16 +123,14 @@ module ActiveRecord
       #   sanitize_sql_array(["name='%s' and group_id='%s'", "foo'bar", 4])
       #   # => "name='foo''bar' and group_id='4'"
       def sanitize_sql_array(ary)
-        statement, *values = ary
-        if values.first.is_a?(Hash) && /:\w+/.match?(statement)
-          replace_named_bind_variables(statement, values.first)
-        elsif statement.include?("?")
-          replace_bind_variables(statement, values)
-        elsif statement.blank?
-          statement
-        else
-          statement % values.collect { |value| connection.quote_string(value.to_s) }
-        end
+        conn = connection
+        collector = Arel::Collectors::SubstituteBinds.new(
+          conn, Arel::Collectors::PlainString.new
+        )
+
+        SqlLiteral.new(conn, *ary).visit(collector)
+
+        collector.value
       end
 
       private
@@ -170,53 +170,6 @@ module ActiveRecord
           expanded_attrs
         end
         deprecate :expand_hash_conditions_for_aggregates
-
-        def replace_bind_variables(statement, values)
-          raise_if_bind_arity_mismatch(statement, statement.count("?"), values.size)
-          bound = values.dup
-          c = connection
-          statement.gsub(/\?/) do
-            replace_bind_variable(bound.shift, c)
-          end
-        end
-
-        def replace_bind_variable(value, c = connection)
-          if ActiveRecord::Relation === value
-            value.to_sql
-          else
-            quote_bound_value(value, c)
-          end
-        end
-
-        def replace_named_bind_variables(statement, bind_vars)
-          statement.gsub(/(:?):([a-zA-Z]\w*)/) do |match|
-            if $1 == ":" # skip postgresql casts
-              match # return the whole match
-            elsif bind_vars.include?(match = $2.to_sym)
-              replace_bind_variable(bind_vars[match])
-            else
-              raise PreparedStatementInvalid, "missing value for :#{match} in #{statement}"
-            end
-          end
-        end
-
-        def quote_bound_value(value, c = connection)
-          if value.respond_to?(:map) && !value.acts_like?(:string)
-            if value.respond_to?(:empty?) && value.empty?
-              c.quote(nil)
-            else
-              value.map { |v| c.quote(v) }.join(",")
-            end
-          else
-            c.quote(value)
-          end
-        end
-
-        def raise_if_bind_arity_mismatch(statement, expected, provided)
-          unless expected == provided
-            raise PreparedStatementInvalid, "wrong number of bind variables (#{provided} for #{expected}) in: #{statement}"
-          end
-        end
     end
   end
 end
