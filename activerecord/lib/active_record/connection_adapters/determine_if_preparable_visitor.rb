@@ -11,12 +11,12 @@ module ActiveRecord
       end
 
       def visit_Arel_Nodes_In(*)
-        @preparable = false
+        # @preparable = false
         super
       end
 
       def visit_Arel_Nodes_SqlLiteral(*)
-        @preparable = false
+        # @preparable = false
         super
       end
     end
