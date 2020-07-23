@@ -129,14 +129,22 @@ module ActionDispatch
           @scope_options      = scope_params[:options]
 
           path_params = []
+          @names = []
+          symbols = []
+          stars = []
           wildcard_options = {}
           ast.each do |node|
             if node.symbol?
               path_params << node.to_sym
-            elsif formatted != false && node.star?
+              @names << node.name
+              symbols << node
+            elsif node.star?
+              stars << node
               # Add a constraint for wildcard route to make it non-greedy and match the
               # optional format part of the route by default.
-              wildcard_options[node.name.to_sym] ||= /.+?/
+              if formatted != false
+                wildcard_options[node.name.to_sym] ||= /.+?/
+              end
             elsif node.cat?
               alter_regex_for_custom_routes(node)
             end
@@ -174,6 +182,15 @@ module ActionDispatch
           end
 
           @required_defaults = (split_options[:required_defaults] || []).map(&:first)
+
+          symbols.each do |node|
+            re = @requirements[node.to_sym]
+            node.regexp = re if re
+          end
+          stars.each do |node|
+            node = node.left
+            node.regexp = @requirements[node.to_sym] || /(.+)/
+          end
         end
 
         def make_route(name, precedence)

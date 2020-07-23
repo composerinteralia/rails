@@ -14,31 +14,20 @@ module ActionDispatch
         def self.build(path, requirements, separators, anchored)
           parser = Journey::Parser.new
           ast = parser.parse path
-          new ast, requirements, separators, anchored
+          new ast, requirements, separators, anchored, []
         end
 
-        def initialize(ast, requirements, separators, anchored)
+        def initialize(ast, requirements, separators, anchored, names)
           @spec         = ast
           @requirements = requirements
           @separators   = separators
           @anchored     = anchored
 
+          @names          = names
           @optional_names = nil
           @required_names = nil
           @re             = nil
           @offsets        = nil
-
-          @names = []
-          @spec.each do |node|
-            if node.symbol?
-              @names << node.name
-              re = @requirements[node.to_sym]
-              node.regexp = re if re
-            elsif node.star?
-              node = node.left
-              node.regexp = @requirements[node.to_sym] || /(.+)/
-            end
-          end
         end
 
         def build_formatter
