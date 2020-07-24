@@ -47,7 +47,7 @@ module ActionDispatch
         end
 
         def optional_names
-          @optional_names ||= spec.find_all(&:group?).flat_map { |group|
+          @optional_names ||= spec.groups.flat_map { |group|
             group.find_all(&:symbol?)
           }.map(&:name).uniq
         end

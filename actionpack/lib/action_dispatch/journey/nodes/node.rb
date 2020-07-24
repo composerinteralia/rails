@@ -13,6 +13,7 @@ module ActionDispatch
         @stars = []
         @terminal_nodes = []
         @wildcard_options = {}
+        @groups = []
 
         tree.each do |node|
           if node.symbol?
@@ -28,6 +29,10 @@ module ActionDispatch
             end
           elsif node.cat?
             alter_regex_for_custom_routes(node)
+          end
+
+          if node.group?
+            @groups << node
           end
 
           if node.terminal?
@@ -59,9 +64,9 @@ module ActionDispatch
         end
       end
 
-      delegate :to_s, :to_sym, :type, :left, :right, :find_all, :grep, to: :tree
+      delegate :to_s, :to_sym, :type, :left, :right, to: :tree
 
-      attr_accessor :path_params, :names, :wildcard_options
+      attr_reader :path_params, :names, :wildcard_options, :groups
 
       def foo(requirements)
         symbols.each do |node|

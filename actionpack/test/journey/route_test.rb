@@ -21,7 +21,7 @@ module ActionDispatch
         path  = Path::Pattern.from_string "/:controller(/:action(/:id(.:format)))"
         route = Route.new(name: "name", app: app, path: path)
 
-        route.ast.grep(Nodes::Terminal).each do |node|
+        route.ast.root_node.grep(Nodes::Terminal).each do |node|
           assert_equal route, node.memo
         end
       end
