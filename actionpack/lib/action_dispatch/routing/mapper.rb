@@ -46,18 +46,15 @@ module ActionDispatch
 
         end
 
+        def all_default_regexp?
+          symbols.all?(&:default_regexp?)
+        end
+
         def memo_foo(route)
           terminal_nodes.each { |n| n.memo = route }
         end
 
-        delegate :===, :to_s, to: :ast
-        # def ===(other)
-        #   ast === other
-        # end
-
-        def to_s
-          ast.to_s
-        end
+        delegate :to_s, to: :ast
 
         attr_accessor :path_params, :names, :wildcard_options
         delegate_missing_to :@ast
