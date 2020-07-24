@@ -116,6 +116,56 @@ module ActionDispatch
           format != false && !path.match?(OPTIONAL_FORMAT_REGEX)
         end
 
+        class AstWrapper
+          def initialize(ast, formatted)
+            @ast = ast
+            @path_params = []
+            @names = []
+            @symbols = []
+            @stars = []
+            @wildcard_options = {}
+
+            ast.each do |node|
+              if node.symbol?
+                path_params << node.to_sym
+                names << node.name
+                symbols << node
+              elsif node.star?
+                stars << node
+                # Add a constraint for wildcard route to make it non-greedy and match the
+                # optional format part of the route by default.
+                if formatted != false
+                  wildcard_options[node.name.to_sym] ||= /.+?/
+                end
+              elsif node.cat?
+                alter_regex_for_custom_routes(node)
+              end
+            end
+          end
+
+          attr_accessor :path_params, :names, :symbols, :stars, :wildcard_options
+
+          private
+
+            # Find all the symbol nodes that are adjacent to literal nodes and alter
+            # the regexp so that Journey will partition them into custom routes.
+            def alter_regex_for_custom_routes(node)
+              if node.left.literal? && node.right.symbol?
+                symbol = node.right
+              elsif node.left.literal? && node.right.cat? && node.right.left.symbol?
+                symbol = node.right.left
+              elsif node.left.symbol? && node.right.literal?
+                symbol = node.left
+              elsif node.left.symbol? && node.right.cat? && node.right.left.literal?
+                symbol = node.left
+              end
+
+              if symbol
+                symbol.regexp = /(?:#{Regexp.union(symbol.regexp, '-')})+/
+              end
+            end
+        end
+
         def initialize(set:, ast:, controller:, default_action:, to:, formatted:, via:, options_constraints:, anchor:, scope_params:, options:)
           @defaults           = scope_params[:defaults]
           @set                = set
@@ -128,33 +178,15 @@ module ActionDispatch
           @internal           = options.delete(:internal)
           @scope_options      = scope_params[:options]
 
-          path_params = []
-          @names = []
-          symbols = []
-          stars = []
-          wildcard_options = {}
-          ast.each do |node|
-            if node.symbol?
-              path_params << node.to_sym
-              @names << node.name
-              symbols << node
-            elsif node.star?
-              stars << node
-              # Add a constraint for wildcard route to make it non-greedy and match the
-              # optional format part of the route by default.
-              if formatted != false
-                wildcard_options[node.name.to_sym] ||= /.+?/
-              end
-            elsif node.cat?
-              alter_regex_for_custom_routes(node)
-            end
-          end
+          wrapped_ast = AstWrapper.new(ast, formatted)
 
-          options = wildcard_options.merge!(options)
+          @names = wrapped_ast.names
 
-          options = normalize_options!(options, path_params, scope_params[:module])
+          options = wrapped_ast.wildcard_options.merge!(options)
 
-          split_options = constraints(options, path_params)
+          options = normalize_options!(options, wrapped_ast.path_params, scope_params[:module])
+
+          split_options = constraints(options, wrapped_ast.path_params)
 
           constraints = scope_params[:constraints].merge Hash[split_options[:constraints] || []]
 
@@ -168,7 +200,7 @@ module ActionDispatch
             @blocks = blocks(options_constraints)
           end
 
-          requirements, conditions = split_constraints path_params, constraints
+          requirements, conditions = split_constraints wrapped_ast.path_params, constraints
           verify_regexp_requirements requirements.map(&:last).grep(Regexp)
 
           formats = normalize_format(formatted)
@@ -177,17 +209,17 @@ module ActionDispatch
           @conditions = Hash[conditions]
           @defaults = formats[:defaults].merge(@defaults).merge(normalize_defaults(options))
 
-          if path_params.include?(:action) && !@requirements.key?(:action)
+          if wrapped_ast.path_params.include?(:action) && !@requirements.key?(:action)
             @defaults[:action] ||= "index"
           end
 
           @required_defaults = (split_options[:required_defaults] || []).map(&:first)
 
-          symbols.each do |node|
+          wrapped_ast.symbols.each do |node|
             re = @requirements[node.to_sym]
             node.regexp = re if re
           end
-          stars.each do |node|
+          wrapped_ast.stars.each do |node|
             node = node.left
             node.regexp = @requirements[node.to_sym] || /(.+)/
           end
@@ -207,7 +239,7 @@ module ActionDispatch
         JOINED_SEPARATORS = SEPARATORS.join # :nodoc:
 
         def path
-          Journey::Path::Pattern.new(@ast, requirements, JOINED_SEPARATORS, @anchor)
+          Journey::Path::Pattern.new(@ast, requirements, JOINED_SEPARATORS, @anchor, @names)
         end
 
         def conditions
@@ -229,23 +261,6 @@ module ActionDispatch
         private :request_method
 
         private
-          # Find all the symbol nodes that are adjacent to literal nodes and alter
-          # the regexp so that Journey will partition them into custom routes.
-          def alter_regex_for_custom_routes(node)
-            if node.left.literal? && node.right.symbol?
-              symbol = node.right
-            elsif node.left.literal? && node.right.cat? && node.right.left.symbol?
-              symbol = node.right.left
-            elsif node.left.symbol? && node.right.literal?
-              symbol = node.left
-            elsif node.left.symbol? && node.right.cat? && node.right.left.literal?
-              symbol = node.left
-            end
-
-            if symbol
-              symbol.regexp = /(?:#{Regexp.union(symbol.regexp, '-')})+/
-            end
-          end
 
           def intern(object)
             object.is_a?(String) ? -object : object
