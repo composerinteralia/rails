@@ -142,7 +142,7 @@ module ActionDispatch
       end
 
       def glob?
-        path.spec.any?(Nodes::Star)
+        path.spec.any_stars?
       end
 
       def dispatcher?

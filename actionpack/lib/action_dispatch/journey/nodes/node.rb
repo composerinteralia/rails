@@ -59,10 +59,9 @@ module ActionDispatch
         end
       end
 
-      delegate :to_s, to: :tree
+      delegate :to_s, :to_sym, :type, :left, :right, :find_all, :grep, to: :tree
 
       attr_accessor :path_params, :names, :wildcard_options
-      delegate_missing_to :tree
 
       def foo(requirements)
         symbols.each do |node|
@@ -73,6 +72,10 @@ module ActionDispatch
           node = node.left
           node.regexp = requirements[node.to_sym] || /(.+)/
         end
+      end
+
+      def any_stars?
+        stars.any?
       end
 
       private
