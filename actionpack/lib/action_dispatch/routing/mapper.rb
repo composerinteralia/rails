@@ -54,6 +54,17 @@ module ActionDispatch
           terminal_nodes.each { |n| n.memo = route }
         end
 
+        def populate_offsets(offsets, requirements)
+          path_params.each do |path_param|
+            if requirements.key?(path_param)
+              re = /#{Regexp.union(requirements[path_param])}|/
+              offsets.push((re.match("").length - 1) + offsets.last)
+            else
+              offsets << offsets.last
+            end
+          end
+        end
+
         delegate :to_s, to: :ast
 
         attr_accessor :path_params, :names, :wildcard_options

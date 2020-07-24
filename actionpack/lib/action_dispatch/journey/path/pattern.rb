@@ -14,11 +14,11 @@ module ActionDispatch
         def self.build(path, requirements, separators, anchored)
           parser = Journey::Parser.new
           ast = parser.parse path
-          new ast, requirements, separators, anchored
+          wrapped_ast = Routing::Mapper::AstWrapper.new(ast, true)
+          new wrapped_ast, requirements, separators, anchored
         end
 
         def initialize(wrapped_ast, requirements, separators, anchored)
-          wrapped_ast = wrapped_ast.is_a?(ActionDispatch::Routing::Mapper::AstWrapper) ? wrapped_ast : ActionDispatch::Routing::Mapper::AstWrapper.new(wrapped_ast, true)
           @spec         = wrapped_ast
           @requirements = requirements
           @separators   = separators
@@ -176,18 +176,7 @@ module ActionDispatch
             return @offsets if @offsets
 
             @offsets = [0]
-
-            spec.find_all(&:symbol?).each do |node|
-              node = node.to_sym
-
-              if @requirements.key?(node)
-                re = /#{Regexp.union(@requirements[node])}|/
-                @offsets.push((re.match("").length - 1) + @offsets.last)
-              else
-                @offsets << @offsets.last
-              end
-            end
-
+            spec.populate_offsets(@offsets, @requirements)
             @offsets
           end
       end
