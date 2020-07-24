@@ -14,7 +14,7 @@ module ActionDispatch
         def self.build(path, requirements, separators, anchored)
           parser = Journey::Parser.new
           ast = parser.parse path
-          wrapped_ast = Routing::Mapper::AstWrapper.new(ast, true)
+          wrapped_ast = Journey::Ast.new(ast, true)
           new wrapped_ast, requirements, separators, anchored
         end
 

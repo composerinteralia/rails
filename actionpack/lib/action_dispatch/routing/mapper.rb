@@ -13,97 +13,6 @@ module ActionDispatch
     class Mapper
       URL_OPTIONS = [:protocol, :subdomain, :domain, :host, :port]
 
-      class AstWrapper
-        def initialize(ast, formatted)
-          @ast = ast
-          @path_params = []
-          @names = []
-          @symbols = []
-          @stars = []
-          @terminal_nodes = []
-          @wildcard_options = {}
-
-          ast.each do |node|
-            if node.symbol?
-              path_params << node.to_sym
-              names << node.name
-              symbols << node
-            elsif node.star?
-              stars << node
-              # Add a constraint for wildcard route to make it non-greedy and match the
-              # optional format part of the route by default.
-              if formatted != false
-                wildcard_options[node.name.to_sym] ||= /.+?/
-              end
-            elsif node.cat?
-              alter_regex_for_custom_routes(node)
-            end
-
-            if node.terminal?
-              terminal_nodes << node
-            end
-          end
-
-        end
-
-        def all_default_regexp?
-          symbols.all?(&:default_regexp?)
-        end
-
-        def memo_foo(route)
-          terminal_nodes.each { |n| n.memo = route }
-        end
-
-        def populate_offsets(offsets, requirements)
-          path_params.each do |path_param|
-            if requirements.key?(path_param)
-              re = /#{Regexp.union(requirements[path_param])}|/
-              offsets.push((re.match("").length - 1) + offsets.last)
-            else
-              offsets << offsets.last
-            end
-          end
-        end
-
-        delegate :to_s, to: :ast
-
-        attr_accessor :path_params, :names, :wildcard_options
-        delegate_missing_to :@ast
-
-        def foo(requirements)
-          symbols.each do |node|
-            re = requirements[node.to_sym]
-            node.regexp = re if re
-          end
-          stars.each do |node|
-            node = node.left
-            node.regexp = requirements[node.to_sym] || /(.+)/
-          end
-        end
-
-        private
-
-        attr_reader :symbols, :stars, :ast, :terminal_nodes
-
-        # Find all the symbol nodes that are adjacent to literal nodes and alter
-        # the regexp so that Journey will partition them into custom routes.
-        def alter_regex_for_custom_routes(node)
-          if node.left.literal? && node.right.symbol?
-            symbol = node.right
-          elsif node.left.literal? && node.right.cat? && node.right.left.symbol?
-            symbol = node.right.left
-          elsif node.left.symbol? && node.right.literal?
-            symbol = node.left
-          elsif node.left.symbol? && node.right.cat? && node.right.left.literal?
-            symbol = node.left
-          end
-
-          if symbol
-            symbol.regexp = /(?:#{Regexp.union(symbol.regexp, '-')})+/
-          end
-        end
-      end
-
       class Constraints < Routing::Endpoint #:nodoc:
         attr_reader :app, :constraints
 
@@ -220,7 +129,7 @@ module ActionDispatch
           @internal           = options.delete(:internal)
           @scope_options      = scope_params[:options]
 
-          @wrapped_ast = AstWrapper.new(ast, formatted)
+          @wrapped_ast = Journey::Ast.new(ast, formatted)
 
           options = @wrapped_ast.wildcard_options.merge!(options)
 
