@@ -5,8 +5,8 @@ require "action_dispatch/journey/visitors"
 module ActionDispatch
   module Journey # :nodoc:
     class Ast # :nodoc:
-      def initialize(ast, formatted)
-        @ast = ast
+      def initialize(tree, formatted)
+        @tree = tree
         @path_params = []
         @names = []
         @symbols = []
@@ -14,7 +14,7 @@ module ActionDispatch
         @terminal_nodes = []
         @wildcard_options = {}
 
-        ast.each do |node|
+        tree.each do |node|
           if node.symbol?
             path_params << node.to_sym
             names << node.name
@@ -34,7 +34,10 @@ module ActionDispatch
             terminal_nodes << node
           end
         end
+      end
 
+      def root_node
+        tree
       end
 
       def all_default_regexp?
@@ -56,10 +59,10 @@ module ActionDispatch
         end
       end
 
-      delegate :to_s, to: :ast
+      delegate :to_s, to: :tree
 
       attr_accessor :path_params, :names, :wildcard_options
-      delegate_missing_to :@ast
+      delegate_missing_to :tree
 
       def foo(requirements)
         symbols.each do |node|
@@ -74,7 +77,7 @@ module ActionDispatch
 
       private
 
-      attr_reader :symbols, :stars, :ast, :terminal_nodes
+      attr_reader :symbols, :stars, :tree, :terminal_nodes
 
       # Find all the symbol nodes that are adjacent to literal nodes and alter
       # the regexp so that Journey will partition them into custom routes.
