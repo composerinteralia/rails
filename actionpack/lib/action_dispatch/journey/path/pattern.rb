@@ -14,16 +14,17 @@ module ActionDispatch
         def self.build(path, requirements, separators, anchored)
           parser = Journey::Parser.new
           ast = parser.parse path
-          new ast, requirements, separators, anchored, []
+          new ast, requirements, separators, anchored
         end
 
-        def initialize(ast, requirements, separators, anchored, names)
-          @spec         = ast
+        def initialize(wrapped_ast, requirements, separators, anchored)
+          wrapped_ast = wrapped_ast.is_a?(ActionDispatch::Routing::Mapper::AstWrapper) ? wrapped_ast : ActionDispatch::Routing::Mapper::AstWrapper.new(wrapped_ast, true)
+          @spec         = wrapped_ast
           @requirements = requirements
           @separators   = separators
           @anchored     = anchored
 
-          @names          = names
+          @names = wrapped_ast.names
           @optional_names = nil
           @required_names = nil
           @re             = nil

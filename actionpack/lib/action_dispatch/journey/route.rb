@@ -82,9 +82,9 @@ module ActionDispatch
 
       def ast
         @decorated_ast ||= begin
-          decorated_ast = path.ast
-          decorated_ast.find_all(&:terminal?).each { |n| n.memo = self }
-          decorated_ast
+          path.ast
+          path.ast.memo_foo(self)
+          path.ast
         end
       end
 
