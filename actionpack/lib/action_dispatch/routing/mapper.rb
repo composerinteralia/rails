@@ -50,6 +50,11 @@ module ActionDispatch
           terminal_nodes.each { |n| n.memo = route }
         end
 
+        delegate :===, :to_s, to: :ast
+        # def ===(other)
+        #   ast === other
+        # end
+
         def to_s
           ast.to_s
         end
