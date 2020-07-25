@@ -54,6 +54,10 @@ module ActiveRecord
       @handlers.unshift([klass, handler])
     end
 
+    def [](attr_name, value, operator = nil)
+      build(table.arel_table[attr_name], value, operator)
+    end
+
     def build(attribute, value, operator = nil)
       value = value.id if value.is_a?(Base)
       if operator ||= table.type(attribute.name).force_equality?(value) && :eq
@@ -65,7 +69,7 @@ module ActiveRecord
     end
 
     def build_bind_attribute(column_name, value)
-      attr = Relation::QueryAttribute.new(column_name.to_s, value, table.type(column_name))
+      attr = Relation::QueryAttribute.new(column_name, value, table.type(column_name))
       Arel::Nodes::BindParam.new(attr)
     end
 

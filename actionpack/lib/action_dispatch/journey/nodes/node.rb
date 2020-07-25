@@ -73,10 +73,6 @@ module ActionDispatch
           re = requirements[node.to_sym]
           node.regexp = re if re
         end
-        stars.each do |node|
-          node = node.left
-          node.regexp = requirements[node.to_sym] || /(.+)/
-        end
       end
 
       def any_stars?
@@ -181,9 +177,10 @@ module ActionDispatch
         attr_reader :name
 
         DEFAULT_EXP = /[^\.\/\?]+/
-        def initialize(left)
-          super
-          @regexp = DEFAULT_EXP
+        GREEDY_EXP = /(.+)/
+        def initialize(left, regexp = DEFAULT_EXP)
+          super(left)
+          @regexp = regexp
           @name = -left.tr("*:", "")
         end
 
