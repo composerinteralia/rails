@@ -82,7 +82,6 @@ module ActionDispatch
 
       def ast
         @decorated_ast ||= begin
-          path.ast
           path.ast.add_route(self)
           path.ast
         end
