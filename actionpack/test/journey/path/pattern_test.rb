@@ -130,22 +130,6 @@ module ActionDispatch
           assert_no_match(path, "/page/loving")
         end
 
-        def test_ast_sets_regular_expressions
-          requirements = { name: /(tender|love)/, value: /./ }
-          path = Pattern.build(
-            "/page/:name/:value",
-            requirements,
-            SEPARATORS,
-            true
-          )
-
-          nodes = path.ast.root.grep(Nodes::Symbol)
-          assert_equal 2, nodes.length
-          nodes.each do |node|
-            assert_equal requirements[node.to_sym], node.regexp
-          end
-        end
-
         def test_match_data_with_group
           path = Pattern.build(
             "/page/:name",
