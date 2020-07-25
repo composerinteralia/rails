@@ -53,7 +53,9 @@ module ActionDispatch
         terminal_nodes.each { |n| n.memo = route }
       end
 
-      def populate_offsets(offsets, requirements)
+      def offsets(requirements)
+        offsets = [0]
+
         path_params.each do |path_param|
           if requirements.key?(path_param)
             re = /#{Regexp.union(requirements[path_param])}|/
@@ -62,6 +64,8 @@ module ActionDispatch
             offsets << offsets.last
           end
         end
+
+        offsets
       end
 
       delegate :to_s, :to_sym, :type, :left, :right, to: :tree

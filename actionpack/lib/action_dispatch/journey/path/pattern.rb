@@ -174,10 +174,7 @@ module ActionDispatch
 
           def offsets
             return @offsets if @offsets
-
-            @offsets = [0]
-            spec.populate_offsets(@offsets, @requirements)
-            @offsets
+            @offsets = spec.offsets(@requirements)
           end
       end
     end
