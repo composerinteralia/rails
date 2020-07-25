@@ -83,7 +83,7 @@ module ActionDispatch
       def ast
         @decorated_ast ||= begin
           path.ast
-          path.ast.memo_foo(self)
+          path.ast.add_route(self)
           path.ast
         end
       end
@@ -142,7 +142,7 @@ module ActionDispatch
       end
 
       def glob?
-        path.spec.any_stars?
+        path.spec.glob?
       end
 
       def dispatcher?

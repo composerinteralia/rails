@@ -139,7 +139,7 @@ module ActionDispatch
             true
           )
 
-          nodes = path.ast.root_node.grep(Nodes::Symbol)
+          nodes = path.ast.root.grep(Nodes::Symbol)
           assert_equal 2, nodes.length
           nodes.each do |node|
             assert_equal requirements[node.to_sym], node.regexp
