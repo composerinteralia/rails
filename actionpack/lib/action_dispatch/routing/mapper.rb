@@ -123,19 +123,17 @@ module ActionDispatch
           @to                 = intern(to)
           @default_controller = intern(controller)
           @default_action     = intern(default_action)
-          @ast                = ast
+          @ast                = Journey::Ast.new(ast, formatted)
           @anchor             = anchor
           @via                = via
           @internal           = options.delete(:internal)
           @scope_options      = scope_params[:options]
 
-          @wrapped_ast = Journey::Ast.new(ast, formatted)
+          options = @ast.wildcard_options.merge!(options)
 
-          options = @wrapped_ast.wildcard_options.merge!(options)
+          options = normalize_options!(options, @ast.path_params, scope_params[:module])
 
-          options = normalize_options!(options, @wrapped_ast.path_params, scope_params[:module])
-
-          split_options = constraints(options, @wrapped_ast.path_params)
+          split_options = constraints(options, @ast.path_params)
 
           constraints = scope_params[:constraints].merge Hash[split_options[:constraints] || []]
 
@@ -149,7 +147,7 @@ module ActionDispatch
             @blocks = blocks(options_constraints)
           end
 
-          requirements, conditions = split_constraints @wrapped_ast.path_params, constraints
+          requirements, conditions = split_constraints @ast.path_params, constraints
           verify_regexp_requirements requirements.map(&:last).grep(Regexp)
 
           formats = normalize_format(formatted)
@@ -158,13 +156,13 @@ module ActionDispatch
           @conditions = Hash[conditions]
           @defaults = formats[:defaults].merge(@defaults).merge(normalize_defaults(options))
 
-          if @wrapped_ast.path_params.include?(:action) && !@requirements.key?(:action)
+          if @ast.path_params.include?(:action) && !@requirements.key?(:action)
             @defaults[:action] ||= "index"
           end
 
           @required_defaults = (split_options[:required_defaults] || []).map(&:first)
 
-          wrapped_ast.foo(@requirements)
+          @ast.add_requirements(@requirements)
         end
 
         def make_route(name, precedence)
@@ -180,9 +178,8 @@ module ActionDispatch
 
         JOINED_SEPARATORS = SEPARATORS.join # :nodoc:
 
-        attr_reader :wrapped_ast
         def path
-          Journey::Path::Pattern.new(wrapped_ast, requirements, JOINED_SEPARATORS, @anchor)
+          Journey::Path::Pattern.new(ast, requirements, JOINED_SEPARATORS, @anchor)
         end
 
         def conditions

@@ -72,7 +72,7 @@ module ActionDispatch
 
       attr_reader :path_params, :names, :wildcard_options, :groups
 
-      def foo(requirements)
+      def add_requirements(requirements)
         symbols.each do |node|
           re = requirements[node.to_sym]
           node.regexp = re if re
