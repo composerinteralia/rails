@@ -4,8 +4,7 @@ module ActionDispatch
   module Journey # :nodoc:
     module Path # :nodoc:
       class Pattern # :nodoc:
-        attr_reader :names, :spec, :requirements, :anchored
-        alias :ast :spec
+        attr_reader :names, :ast, :requirements, :anchored
 
         def self.from_string(string)
           build(string, {}, "/.?", true)
@@ -19,7 +18,7 @@ module ActionDispatch
         end
 
         def initialize(ast, requirements, separators, anchored)
-          @spec         = ast
+          @ast          = ast
           @requirements = requirements
           @separators   = separators
           @anchored     = anchored
@@ -32,7 +31,7 @@ module ActionDispatch
         end
 
         def build_formatter
-          Visitors::FormatBuilder.new.accept(spec)
+          Visitors::FormatBuilder.new.accept(ast)
         end
 
         def eager_load!
@@ -47,7 +46,7 @@ module ActionDispatch
         end
 
         def optional_names
-          @optional_names ||= spec.groups.flat_map { |group|
+          @optional_names ||= ast.groups.flat_map { |group|
             group.find_all(&:symbol?)
           }.map(&:name).uniq
         end
@@ -158,7 +157,7 @@ module ActionDispatch
         end
 
         def to_regexp
-          @re ||= regexp_visitor.new(@separators, @requirements).accept spec
+          @re ||= regexp_visitor.new(@separators, @requirements).accept ast
         end
 
         def requirements_for_missing_keys_check
@@ -174,7 +173,7 @@ module ActionDispatch
 
           def offsets
             return @offsets if @offsets
-            @offsets = spec.offsets(@requirements)
+            @offsets = ast.offsets(@requirements)
           end
       end
     end

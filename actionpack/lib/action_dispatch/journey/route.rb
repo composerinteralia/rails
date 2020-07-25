@@ -142,7 +142,7 @@ module ActionDispatch
       end
 
       def glob?
-        path.spec.glob?
+        path.ast.glob?
       end
 
       def dispatcher?
