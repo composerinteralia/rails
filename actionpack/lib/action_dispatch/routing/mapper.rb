@@ -201,7 +201,6 @@ module ActionDispatch
         private :request_method
 
         private
-
           def intern(object)
             object.is_a?(String) ? -object : object
           end

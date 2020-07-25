@@ -79,26 +79,25 @@ module ActionDispatch
       end
 
       private
+        attr_reader :symbols, :terminals
 
-      attr_reader :symbols, :terminals
+        # Find all the symbol nodes that are adjacent to literal nodes and alter
+        # the regexp so that Journey will partition them into custom routes.
+        def alter_regex_for_custom_routes(node)
+          if node.left.literal? && node.right.symbol?
+            symbol = node.right
+          elsif node.left.literal? && node.right.cat? && node.right.left.symbol?
+            symbol = node.right.left
+          elsif node.left.symbol? && node.right.literal?
+            symbol = node.left
+          elsif node.left.symbol? && node.right.cat? && node.right.left.literal?
+            symbol = node.left
+          end
 
-      # Find all the symbol nodes that are adjacent to literal nodes and alter
-      # the regexp so that Journey will partition them into custom routes.
-      def alter_regex_for_custom_routes(node)
-        if node.left.literal? && node.right.symbol?
-          symbol = node.right
-        elsif node.left.literal? && node.right.cat? && node.right.left.symbol?
-          symbol = node.right.left
-        elsif node.left.symbol? && node.right.literal?
-          symbol = node.left
-        elsif node.left.symbol? && node.right.cat? && node.right.left.literal?
-          symbol = node.left
+          if symbol
+            symbol.regexp = /(?:#{Regexp.union(symbol.regexp, '-')})+/
+          end
         end
-
-        if symbol
-          symbol.regexp = /(?:#{Regexp.union(symbol.regexp, '-')})+/
-        end
-      end
     end
 
     module Nodes # :nodoc:
