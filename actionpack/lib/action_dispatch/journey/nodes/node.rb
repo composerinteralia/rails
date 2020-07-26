@@ -6,7 +6,7 @@ module ActionDispatch
   module Journey # :nodoc:
     class Ast # :nodoc:
       delegate :left, :right, :to_s, :to_sym, :type, to: :tree
-      attr_reader :groups, :names, :path_params, :tree, :wildcard_options
+      attr_reader :groups, :names, :offsets, :path_params, :tree, :wildcard_options
       alias :root :tree
 
       def initialize(tree, formatted)
@@ -18,6 +18,7 @@ module ActionDispatch
         @wildcard_options = {}
         @groups = []
         @terminals = []
+        @offsets = [0]
 
         tree.each do |node|
           if node.symbol?
@@ -46,28 +47,21 @@ module ActionDispatch
 
       def add_requirements(requirements)
         symbols.each do |node|
-          re = requirements[node.to_sym]
+          path_param = node.to_sym
+          re = requirements[path_param]
           node.regexp = re if re
+
+          if requirements.key?(path_param)
+            re = /#{Regexp.union(re)}|/
+            @offsets.push((re.match("").length - 1) + @offsets.last)
+          else
+            @offsets << @offsets.last
+          end
         end
       end
 
       def add_route(route)
         terminals.each { |n| n.memo = route }
-      end
-
-      def offsets(requirements)
-        offsets = [0]
-
-        path_params.each do |path_param|
-          if requirements.key?(path_param)
-            re = /#{Regexp.union(requirements[path_param])}|/
-            offsets.push((re.match("").length - 1) + offsets.last)
-          else
-            offsets << offsets.last
-          end
-        end
-
-        offsets
       end
 
       def default_regexp?

@@ -14,6 +14,7 @@ module ActionDispatch
           parser = Journey::Parser.new
           ast = parser.parse path
           ast = Journey::Ast.new(ast, true)
+          ast.add_requirements(requirements)
           new ast, requirements, separators, anchored
         end
 
@@ -173,7 +174,7 @@ module ActionDispatch
 
           def offsets
             return @offsets if @offsets
-            @offsets = ast.offsets(@requirements)
+            @offsets = ast.offsets
           end
       end
     end
