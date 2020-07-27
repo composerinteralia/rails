@@ -173,7 +173,21 @@ module ActionDispatch
 
           def offsets
             return @offsets if @offsets
-            @offsets = ast.offsets(@requirements)
+
+            @offsets = [0]
+
+            ast.find_all(&:symbol?).each do |node|
+              node = node.to_sym
+
+              if @requirements.key?(node)
+                re = /#{Regexp.union(@requirements[node])}|/
+                @offsets.push((re.match("").length - 1) + @offsets.last)
+              else
+                @offsets << @offsets.last
+              end
+            end
+
+            @offsets
           end
       end
     end

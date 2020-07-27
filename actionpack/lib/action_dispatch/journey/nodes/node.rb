@@ -5,7 +5,7 @@ require "action_dispatch/journey/visitors"
 module ActionDispatch
   module Journey # :nodoc:
     class Ast # :nodoc:
-      delegate :left, :right, :to_s, :to_sym, :type, to: :tree
+      delegate :find_all, :left, :right, :to_s, :to_sym, :type, to: :tree
       attr_reader :groups, :names, :path_params, :tree, :wildcard_options
       alias :root :tree
 
@@ -53,21 +53,6 @@ module ActionDispatch
 
       def route=(route)
         terminals.each { |n| n.memo = route }
-      end
-
-      def offsets(requirements)
-        offsets = [0]
-
-        path_params.each do |path_param|
-          if requirements.key?(path_param)
-            re = /#{Regexp.union(requirements[path_param])}|/
-            offsets.push((re.match("").length - 1) + offsets.last)
-          else
-            offsets << offsets.last
-          end
-        end
-
-        offsets
       end
 
       def default_regexp?
