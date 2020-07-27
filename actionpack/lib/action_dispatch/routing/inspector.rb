@@ -19,7 +19,7 @@ module ActionDispatch
       end
 
       def path
-        super.ast.to_s
+        super.spec.to_s
       end
 
       def name

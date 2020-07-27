@@ -31,7 +31,7 @@ module ActionDispatch
         end
 
         def asts
-          routes.map(&:path).map(&:ast)
+          routes.map(&:path).map(&:spec)
         end
       end
 
