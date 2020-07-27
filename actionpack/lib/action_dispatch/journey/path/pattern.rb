@@ -11,10 +11,10 @@ module ActionDispatch
           build(string, {}, "/.?", true)
         end
 
-        def self.build(path, requirements, separators, anchored)
+        def self.build(path, requirements, separators, anchored, formatted=true)
           parser = Journey::Parser.new
           ast = parser.parse path
-          ast = Journey::Ast.new(ast, true)
+          ast = Journey::Ast.new(ast, formatted)
           new ast, requirements, separators, anchored
         end
 
