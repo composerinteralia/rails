@@ -4,7 +4,7 @@ module ActionDispatch
   module Journey # :nodoc:
     module Path # :nodoc:
       class Pattern # :nodoc:
-        attr_reader :spec, :requirements, :anchored
+        attr_reader :names, :ast, :requirements, :anchored
 
         def self.from_string(string)
           build(string, {}, "/.?", true)
@@ -13,16 +13,17 @@ module ActionDispatch
         def self.build(path, requirements, separators, anchored)
           parser = Journey::Parser.new
           ast = parser.parse path
+          ast = Journey::Ast.new(ast, true)
           new ast, requirements, separators, anchored
         end
 
         def initialize(ast, requirements, separators, anchored)
-          @spec         = ast
+          @ast          = ast
           @requirements = requirements
           @separators   = separators
           @anchored     = anchored
 
-          @names          = nil
+          @names          = ast.names
           @optional_names = nil
           @required_names = nil
           @re             = nil
@@ -30,7 +31,7 @@ module ActionDispatch
         end
 
         def build_formatter
-          Visitors::FormatBuilder.new.accept(spec)
+          Visitors::FormatBuilder.new.accept(ast)
         end
 
         def eager_load!
@@ -40,25 +41,12 @@ module ActionDispatch
           nil
         end
 
-        def ast
-          @spec.find_all(&:symbol?).each do |node|
-            re = @requirements[node.to_sym]
-            node.regexp = re if re
-          end
-
-          @spec
-        end
-
-        def names
-          @names ||= spec.find_all(&:symbol?).map(&:name)
-        end
-
         def required_names
           @required_names ||= names - optional_names
         end
 
         def optional_names
-          @optional_names ||= spec.find_all(&:group?).flat_map { |group|
+          @optional_names ||= ast.groups.flat_map { |group|
             group.find_all(&:symbol?)
           }.map(&:name).uniq
         end
@@ -169,7 +157,7 @@ module ActionDispatch
         end
 
         def to_regexp
-          @re ||= regexp_visitor.new(@separators, @requirements).accept spec
+          @re ||= regexp_visitor.new(@separators, @requirements).accept ast
         end
 
         def requirements_for_missing_keys_check
@@ -185,21 +173,7 @@ module ActionDispatch
 
           def offsets
             return @offsets if @offsets
-
-            @offsets = [0]
-
-            spec.find_all(&:symbol?).each do |node|
-              node = node.to_sym
-
-              if @requirements.key?(node)
-                re = /#{Regexp.union(@requirements[node])}|/
-                @offsets.push((re.match("").length - 1) + @offsets.last)
-              else
-                @offsets << @offsets.last
-              end
-            end
-
-            @offsets
+            @offsets = ast.offsets(@requirements)
           end
       end
     end
