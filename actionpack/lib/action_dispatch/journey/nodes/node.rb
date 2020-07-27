@@ -6,7 +6,7 @@ module ActionDispatch
   module Journey # :nodoc:
     class Ast # :nodoc:
       delegate :find_all, :left, :right, :to_s, :to_sym, :type, to: :tree
-      attr_reader :groups, :names, :path_params, :tree, :wildcard_options
+      attr_reader :names, :path_params, :tree, :wildcard_options
       alias :root :tree
 
       def initialize(tree, formatted)
@@ -16,7 +16,6 @@ module ActionDispatch
         @symbols = []
         @glob = false
         @wildcard_options = {}
-        @groups = []
         @terminals = []
 
         tree.each do |node|
@@ -34,8 +33,6 @@ module ActionDispatch
             end
           elsif node.cat?
             alter_regex_for_custom_routes(node)
-          elsif node.group?
-            groups << node
           end
 
           if node.terminal?

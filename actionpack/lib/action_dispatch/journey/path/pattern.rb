@@ -46,7 +46,7 @@ module ActionDispatch
         end
 
         def optional_names
-          @optional_names ||= ast.groups.flat_map { |group|
+          @optional_names ||= ast.find_all(&:group?).flat_map { |group|
             group.find_all(&:symbol?)
           }.map(&:name).uniq
         end
