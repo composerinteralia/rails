@@ -671,7 +671,7 @@ class HasManyAssociationsTest < ActiveRecord::TestCase
   end
 
   def test_taking_with_inverse_of
-    interests(:woodsmanship).destroy
+    interests(:woodworking).destroy
     interests(:survival).destroy
 
     zine = zines(:going_out)
