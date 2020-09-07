@@ -56,6 +56,7 @@ module ActionDispatch
     autoload :HostAuthorization
     autoload :RequestId
     autoload :Callbacks
+    autoload :CheckParams
     autoload :Cookies
     autoload :ActionableExceptions
     autoload :DebugExceptions
