@@ -1,3 +1,10 @@
+*   Fix and add protections for XSS in `ActionView::Helpers` and `ERB::Util`.
+
+    Add the method `ERB::Util.xml_name_escape` to escape dangerous characters
+    in names of tags and names of attributes, following the specification of XML.
+
+    *Álvaro Martín Fraguas*
+
 *   `Pathname.blank?` only returns true for `Pathname.new("")`
 
     Previously it would end up calling `Pathname#empty?` which returned true
