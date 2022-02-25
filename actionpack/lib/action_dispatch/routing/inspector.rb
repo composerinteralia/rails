@@ -117,7 +117,8 @@ module ActionDispatch
             { name: route.name,
               verb: route.verb,
               path: route.path,
-              reqs: route.reqs }
+              reqs: route.reqs,
+              source_location: route.source_location }
           end
         end
 
@@ -229,6 +230,7 @@ module ActionDispatch
                 Verb              | #{r[:verb]}
                 URI               | #{r[:path]}
                 Controller#Action | #{r[:reqs]}
+                Source Location   | #{r[:source_location]}
               MESSAGE
             end
           end

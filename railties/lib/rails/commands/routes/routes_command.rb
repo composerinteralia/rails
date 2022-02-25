@@ -10,7 +10,9 @@ module Rails
       class_option :expanded, type: :boolean, aliases: "-E", desc: "Print routes expanded vertically with parts explained."
 
       def perform(*)
-        require_application_and_environment!
+        require_application!
+        ActionDispatch::Routing::Mapper.route_source_locations = true
+        require_environment!
         require "action_dispatch/routing/inspector"
 
         say inspector.format(formatter, routes_filter)
