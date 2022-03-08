@@ -1,3 +1,7 @@
+*   Allow Content Security Policy DSL to generate for API responses.
+
+    *Tim Wade*
+
 *   Fix `content_security_policy` returning invalid directives.
 
     Directives such as `self`, `unsafe-eval` and few others were not
