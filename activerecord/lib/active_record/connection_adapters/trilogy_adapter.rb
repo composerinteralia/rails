@@ -47,9 +47,8 @@ module ActiveRecord
         private_constant :HIGH_PRECISION_CURRENT_TIMESTAMP
 
         def select_all(*, **) # :nodoc:
-          result = nil
+          result = super
           with_raw_connection do |conn|
-            result = super
             conn.next_result while conn.more_results_exist?
           end
           result
